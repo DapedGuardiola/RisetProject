@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { use, useState } from "react";
+import { useContentContext } from "./Clients/ContentClients";
 export default function FormComment({
   isRoot = false,
   parent,
@@ -14,22 +15,22 @@ export default function FormComment({
   replyVideoId: number | undefined;
 }) {
   const [reply, setReply] = useState(false);
-  const [comment, setComment] = useState("");
+  const {addComment,setAddComment} = useContentContext();
   let handleReply = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const res = await fetch("http://localhost:3000/comments/", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comments`, {
       method: "POST",
       headers: { "Content-Type": "Application/json" },
       body: JSON.stringify({
         video_id: replyVideoId,
         parent_comment_id: parent,
         level: (isRoot? 0 : parentLevel! + 1),
-        comment: comment,
+        comment: addComment,
         user_id: replyUserId,
       }),
     });
     if (res.ok) {
-      setComment("");
+      setAddComment("");
     }
   };
   let handleButtonReply = () => {
@@ -52,8 +53,8 @@ export default function FormComment({
         <input
           name="comment"
           type="text"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
+          value={addComment}
+          onChange={(e) => setAddComment(e.target.value)}
           className="w-full h-10 text-xl pl-2 mr-2 border border-gray-800 rounded"
           placeholder="Write your reply"
         />

@@ -2,9 +2,10 @@
 
 import { discoverValidationDepths } from "next/dist/server/app-render/instant-validation/instant-validation";
 import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
-import { FormEvent, useMemo, useState, useEffect } from "react";
+import { FormEvent, useMemo, useState, useEffect,Fragment } from "react";
 import FormComment from "./formReply";
-import Comment  from "./comment";
+import Comment from "./comment";
+import { useContentContext } from "./Clients/ContentClients";
 
 type usersType = {
   user_id: number;
@@ -15,7 +16,6 @@ type usersType = {
 
 type paramType = {
   userId: number;
-  videoId: number;
 };
 
 type CommentItem = {
@@ -33,14 +33,15 @@ function getInitial(author: string) {
   return author.trim().charAt(0).toUpperCase() || "?";
 }
 
-export default function CommentSection({ videoId, userId }: paramType) {
+export default function CommentSection({userId }: paramType) {
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const {activeComment,addComment, activeIndex} = useContentContext();
   useEffect(() => {
     setIsLoading(true);
     const fetchData = async () => {
       const res = await fetch(
-        `http://localhost:3000/comments/video/${videoId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/comments/video/${activeIndex}`,
       );
       const data: CommentItem[] = await res.json();
       setComments(data);
@@ -50,7 +51,7 @@ export default function CommentSection({ videoId, userId }: paramType) {
       }
     };
     fetchData();
-  }, []);
+  }, [activeIndex,addComment]);
 
   const { topLevel, repliesByParent } = useMemo(() => {
     if (comments) {
@@ -64,7 +65,6 @@ export default function CommentSection({ videoId, userId }: paramType) {
         const isReply =
           comment.parent_comment_id !== null &&
           validParentIds.has(comment.parent_comment_id);
-
         if (isReply) {
           const parentId = comment.parent_comment_id as number;
           if (!groupedReplies[parentId]) {
@@ -82,24 +82,26 @@ export default function CommentSection({ videoId, userId }: paramType) {
   }, [comments]);
 
   return isLoading ? (
-    <div className="animate-spin">
-      <svg className="mr-3 size-5 animate-spin ..." viewBox="0 0 24 24"></svg>
-      Loading Comment Data...
-    </div>
+    <Fragment >
+      <div className="animate-spin hidden={activeComment}">
+        <svg className="mr-3 size-5 animate-spin ..." viewBox="0 0 24 24"></svg>
+      </div>
+      <p hidden={activeComment}>Loading Comment Data...</p>
+    </Fragment>
   ) : (
-    <section>
+    <section className={activeComment?"absolute":""} hidden={activeComment}>
       {/* Comment Header  */}
-      <div className="w-full mt-2.5 border-b border-gray-500 rounded-t-xl">
+      <div className="w-full max-w-60 border-b border-gray-500 rounded-t-xl">
         <h2 className="p-6 font-semibold text-2xl">
           {comments.length} Comments
         </h2>
       </div>
       <div className="py-6">
         {/* Add comment Handler */}
-        <FormComment isRoot = {true}
-              parent={undefined}
-              replyVideoId={videoId}
-              replyUserId={userId}/>
+        <FormComment isRoot={true}
+          parent={undefined}
+          replyVideoId={activeIndex}
+          replyUserId={userId} />
 
         {/*All Comments */}
         <div className="w-full ">
@@ -107,7 +109,7 @@ export default function CommentSection({ videoId, userId }: paramType) {
             <p className="text-2xl font-bold">No Comment Here</p>
           ) : (
             topLevel.map((root) => (
-              <Comment key={root.comment_id} data={root} allReplies={repliesByParent} dataReplies={repliesByParent[root.comment_id]} videoId={videoId} userId={userId}/>
+              <Comment key={root.comment_id} data={root} allReplies={repliesByParent} dataReplies={repliesByParent[root.comment_id]} videoId={activeIndex} userId={userId} />
             ))
           )}
         </div>

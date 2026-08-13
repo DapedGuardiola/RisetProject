@@ -8,6 +8,12 @@ services:
     environment:
       WATCHPACK_POLLING: "true"
       PORT: 3001
+      INTERNAL_API_URL: http://backend:3000
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next    
     develop:
       watch:
         - action: sync
@@ -28,11 +34,15 @@ services:
       - "3000:3000"
     environment: 
       DATABASE_URL: postgresql://postgres:Akudavid123@postgre:5432/risetproject
+      CLICKHOUSE_URL: http://default:root@clickhouse:8123/analytics
       PORT: 3000
       DEBUG : true
-    depends_on: [postgre]
+    depends_on: 
+      postgre : 
+        condition: service_healthy
     volumes:
     - ./backend:/usr/src/app
+    - /usr/src/app/node_modules
     develop:
       watch:
         - action: sync
@@ -46,6 +56,7 @@ services:
 
   postgre:
     image: postgres
+    command: ["postgres", "-c", "wal_level=logical"]
     restart: always
     # set shared memory limit when using docker compose
     shm_size: 128mb
@@ -63,8 +74,12 @@ services:
       - 5432:5432
     volumes:
       - postgres_data:/var/lib/postgresql/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  
   kafka: 
     image: quay.io/debezium/kafka:3.6
     hostname: kafka
@@ -78,6 +93,32 @@ services:
       KAFKA_LISTENERS: PLAINTEXT://kafka:9092,CONTROLLER://kafka:9093
       KAFKA_ADVERTISED_LISTENERS : PLAINTEXT://kafka:9092
   
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      kafka : 
+        condition : service_started
+    environment:
+      KAFKA_CLUSTERS_0_NAME: "local"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:9092"
+
+  clickhouse:
+    image: clickhouse/clickhouse-server
+    ports: 
+     - 8123:8123
+     - 9000:9000
+    environment:
+      CLICKHOUSE_PASSWORD: root
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144 
+    volumes:
+      - ./clickhouse/config/my-config-setup.xml:/etc/clickhouse-server/config.d/my-config-setup.xml
+      - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init-db.sql
   connect:
     image: quay.io/debezium/connect:3.6
     ports: 
@@ -87,7 +128,13 @@ services:
       CONFIG_STORAGE_TOPIC: my_connect_configs
       OFFSET_STORAGE_TOPIC: my_connect_offsets
       STATUS_STORAGE_TOPIC: my_connect_statuses
-    depends_on: [kafka]
+      BOOTSTRAP_SERVERS: kafka:9092
+    depends_on: 
+      kafka:
+        condition: service_started
+      postgre:
+        condition: service_healthy
   
 volumes:
   postgres_data:
+  clickhouse_data:

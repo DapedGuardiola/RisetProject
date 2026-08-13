@@ -6,8 +6,19 @@
     "database.port": "5432", 
     "database.user": "postgres", 
     "database.password": "Akudavid123", 
-    "database.dbname" : "risetproject", 
+    "slot.name": "debezium_orders",
+    "plugin.name": "pgoutput",
+    "publication.name": "dbz_publication",
+    "database.dbname" : "risetproject",   
     "topic.prefix": "analytics", 
-    "table.include.list": "public.comments,public.users,public.videos" 
+    "table.include.list": "public.comments,public.users,public.videos" ,
+    "transforms":"unwrap",
+    "transforms.unwrap.type":"io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.delete.tombstone.handling.mode":"rewrite",
+    "transforms.unwrap.add.fields":"table,lsn",
+    "key.converter.schemas.enable": "false",
+    "value.converter.schemas.enable": "false",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter"
   }
 }

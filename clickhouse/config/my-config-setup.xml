@@ -1,0 +1,7 @@
+<clickhouse>
+   <kafka>
+       <sasl_username>username</sasl_username>
+       <sasl_password>password</sasl_password>
+       <sasl_mechanisms>PLAIN</sasl_mechanisms>
+   </kafka>
+</clickhouse>

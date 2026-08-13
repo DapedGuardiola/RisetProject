@@ -23,5 +23,4 @@ export class CommentsController {
   async findByVideoId(@Param('videoId') videoId:number){
     return this.commentsService.getVideoComment(videoId);
   }
-
 }

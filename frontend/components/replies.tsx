@@ -1,7 +1,8 @@
 "use client";
-import { useMemo, useState } from "react";
-import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
+
+import { useState } from "react";
 import Comment from "./comment";
+import type { CommentType } from "./Types/CommentType";
 type usersType = {
   user_id: number;
   username: string;
@@ -12,41 +13,74 @@ type usersType = {
 type paramType = {
   userId: number;
   videoId: number;
-  replies: CommentItem[];
-  allReplies: Record<number,CommentItem[]>;
+  replies: CommentType[];
+  allReplies: Record<number, CommentType[]>;
 };
 
-type CommentItem = {
-  comment_id: number;
-  video_id: number;
-  user_id: number;
-  comment: string;
-  parent_comment_id: number;
-  level: number;
-  create_time: Timestamp;
-  user: usersType;
-};
+const REPLIES_PER_PAGE = 10;
 
-export default function Replies({ userId, videoId, replies, allReplies }: paramType) {
+export default function Replies({
+  userId,
+  videoId,
+  replies,
+  allReplies,
+}: paramType) {
   const [showReplies, setShowReplies] = useState(false);
+  const [offset, setOffset] = useState(REPLIES_PER_PAGE);
 
-  return replies ? (
+  if (!replies || replies.length === 0) {
+    return null;
+  }
+
+  const visibleReplies = replies.slice(0, offset);
+  const hasMore = offset < replies.length;
+
+  const handleToggleReplies = () => {
+    setShowReplies((current) => !current);
+  };
+
+  const handleShowMore = () => {
+    setOffset((current) =>
+      Math.min(current + REPLIES_PER_PAGE, replies.length)
+    );
+  };
+
+  return (
     <>
-      <button onClick={()=>setShowReplies(!showReplies)}>show replies</button>
-      <div hidden={!showReplies} className="max-h-100 overflow-scroll scrollbar-none">
-        {replies.map((data) => (
-          <Comment
-            key={data.comment_id}
-            data={data}
-            dataReplies={allReplies[data.comment_id]}
-            allReplies={allReplies}
-            videoId={videoId}
-            userId={userId}
-          />
-        ))}
-      </div>
+      <button
+        type="button"
+        onClick={handleToggleReplies}
+        className="text-sm font-medium"
+      >
+        {showReplies
+          ? "Hide replies"
+          : `Show replies (${replies.length})`}
+      </button>
+
+      {showReplies && (
+        <div className="max-h-100 overflow-scroll scrollbar-none">
+          {visibleReplies.map((data) => (
+            <Comment
+              key={data.comment_id}
+              data={data}
+              dataReplies={allReplies[data.comment_id]}
+              allReplies={allReplies}
+              videoId={videoId}
+              userId={userId}
+            />
+          ))}
+
+          {hasMore && (
+            <button
+              type="button"
+              onClick={handleShowMore}
+              className="mt-3 text-sm font-medium"
+            >
+              Show more replies
+            </button>
+          )}
+        </div>
+      )}
     </>
-  ) : (
-    <div>no replies</div>
   );
 }

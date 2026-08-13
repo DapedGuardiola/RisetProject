@@ -17,7 +17,7 @@ export default async function VideoDetailPage({
 }: VideoDetailPageProps) {
   
   const { id } = await params;
-  const videoRes = await fetch(`http://localhost:3000/video/${id}`);
+  const videoRes = await fetch(`http://backend:3000/video/${id}`);
   const data: videoType = await videoRes.json();
 
   return <VideoDetailClient data={data} id={id} />

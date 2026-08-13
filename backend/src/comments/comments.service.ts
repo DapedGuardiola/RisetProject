@@ -8,7 +8,7 @@ export class CommentsService {
     constructor(
         @Inject(DRIZZLE)
         private db: DrizzleDB
-    ) { }
+    ) {}
     async findAll() {
         try {
             return await this.db.transaction(async (tx) => {

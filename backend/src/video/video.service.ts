@@ -9,10 +9,13 @@ export class VideoService {
             @Inject(DRIZZLE)
             private db:DrizzleDB
         ){}
-        async findAll() {
+        async findAll(offset: number = 0) {
                 try {
                     return await this.db.transaction(async (tx) => {
-                        return tx.query.videos.findMany();
+                        return tx.query.videos.findMany({
+                            limit : 2,
+                            offset : offset,
+                        });
                     });
                 } catch (e) {
                     console.error(e);

@@ -18,9 +18,12 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed": "ts-node -r tsconfig-paths/register src/scripts/seeder.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/scripts/seeder.ts",
+    "extract-data": "ts-node -r tsconfig-paths/register src/scripts/extractData.ts",
+    "migrate": "npx drizzle-kit migrate"
   },
   "dependencies": {
+    "@clickhouse/client": "^1.23.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
@@ -29,6 +32,7 @@
     "dotenv": "^17.4.2",
     "drizzle-orm": "^1.0.0-rc.4",
     "pg": "^8.22.0",
+    "recharts": "^3.10.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

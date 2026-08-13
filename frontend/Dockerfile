@@ -27,7 +27,9 @@ COPY . .
 ENV WATCHPACK_POLLING=true
 ENV HOSTNAME="0.0.0.0"
 
-RUN chown -R node:node /app
+# Pre-create .next so the anonymous volume inherits node:node ownership
+RUN mkdir -p /app/.next && chown -R node:node /app
+
 USER node
 
 EXPOSE 3001

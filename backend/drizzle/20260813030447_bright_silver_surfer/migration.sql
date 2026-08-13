@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "create_time" timestamp;

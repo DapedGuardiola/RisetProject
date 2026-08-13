@@ -1,24 +1,40 @@
 import { Pool } from "pg";
 import { DrizzleDB } from "src/db/drizzle";
-import { ConfigModule, ConfigService } from "@nestjs/config";
+import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "src/app.module";
-import { DrizzleD1Database } from "drizzle-orm/d1";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { relations } from "../db/relations";
 import { faker } from '@faker-js/faker';
 import { videos, users, comments } from "../db/schema";
+import * as fs from 'fs';
+import * as path from 'path';
 async function bootstrap() {
-    console.log(faker.word.words(5));
-    const availTrailer = [
-        { title: "Avenger: Infinity war", key: "6ZfuNTqbHE8", thumb: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSLRjEFmxz5jzrgiwo2aZZKJwqfEFpBs8Of0nZBEIxDZoV2eVPKOyeMV7o2&s=10" },
-        { title: "Avenger: Doomsday", key: "irVNGjRFZGk", thumb: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTdVxisllxih2dyGbvJ_vvGM_1dbOP69E1tKcWv7iFm1A&s=10" },
-        { title: "Spider-man 1", key: "HXFpaMHiaPc", thumb: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXlXktxSkrmMb4X13sm-qu0rLRX2RyDtBF_X5PjKbp7w&s=10" },
-        { title: "Extraction", key: "L6P3nI6VnlY", thumb: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTawzz6PZQPxdKeehUEN00zFeXGNoY2Gm7UyJb8hWpDgWck94ZCsceQrME&s=10" },
-        { title: "Extraction 2", key: "Nz2I7NlBJp0", thumb: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT-fmheyAvfCLwIwY_X5BmI44zdOU0KtNHUWXkFTxmOeUhawKVGwxfyk0lk&s=10" },
-        { title: "Transformers", key: "itnqEauWQZM", thumb: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTLrcYxS6hPWb03siduszF_4ZUKINGetKNGXDT53Yd7Dw&s=10" },
-        { title: "Avatar : Fire & Ash", key: "nb_fFj_0rq8", thumb: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTQgt7cRtTb7Q3IXwSw56cPbfmOoWHqg8ATyS9XVdR0PQ&s=10" },
-    ];
+    type UserType = {
+        user_id: number;
+        username: string;
+        nickname: string;
+        followers_count: number,
+        create_time: Date,
+    };
+    type videoType = {
+        video_id: number,
+        title: string,
+        yt_key: string,
+        description: string,
+        thumbnail: string,
+        views_count: number,
+    };
+    type CommentType = {
+        comment_id: number;
+        video_id: number;
+        user_id: number;
+        comment: string;
+        parent_comment_id: number;
+        level: number;
+        create_time: Date;
+        user: UserType;
+    };
 
     const app = await NestFactory.createApplicationContext(AppModule);
     const configService = app.get(ConfigService);
@@ -26,49 +42,100 @@ async function bootstrap() {
         connectionString: configService.get<string>('DATABASE_URL'),
     });
     const db: DrizzleDB = drizzle({ client: pool, relations });
+
+    const outputVideoIdsPath = path.join(__dirname, './rawdata/newvideo_id.json');
+    const outputCommentsPath = path.join(__dirname, './rawdata/newcomments.json');
+    const outputUsersPath = path.join(__dirname, './rawdata/newusers.json');
+
+    ///////// VIDEO ////////
+    const availableVideoId = fs.readFileSync(outputVideoIdsPath, 'utf-8');
+    const videoIds = JSON.parse(availableVideoId);
+
     const insertedVideos = await db
         .insert(videos)
         .values(
-            availTrailer.map(item => ({
-                title: item.title,
-                yt_key: item.key,
-                thumbnail: item.thumb,
+            videoIds.map(item => ({
+                video_id: Number(item),
+                title: faker.word.words({
+                    count: { min: 4, max: 8 },
+                }),
                 description: faker.word.words({
-                    count: { min: 8, max: 15 },
+                    count: { min: 8, max: 25 },
                 }),
             }))
         )
         .returning({ id: videos.video_id });
 
-    const videoIds = insertedVideos.map(v => v.id);
-    // users
-    const usersData = Array.from({ length: 10 }, () => ({
-        username: faker.person.fullName(),
-        nickname: faker.person.firstName(),
+    //////// User /////////
+    const rawUser = fs.readFileSync(outputUsersPath, 'utf-8');
+    const usersData: UserType[] = JSON.parse(rawUser);
+
+    const insertedUsers: { user_id: number }[] = [];
+
+    let simulatedTime = Date.now();
+    const rows = usersData.map(user => ({
+        user_id: user.user_id,
+        username: user.username,
+        nickname: user.nickname,
+        followers_count: faker.number.int({ min: 1000, max: 2000 }),
+        create_time: new Date(simulatedTime),
     }));
-    const insertedUser = await db.insert(users).values(usersData).returning({ user_id: users.user_id });
-    const userIds = insertedUser.map(v => v.user_id);
+
+    for (let i = 0; i < rows.length;) {
+        const CHUNK_SIZE = faker.number.int({ min: 400, max: 700 });
+        const chunk = rows.slice(i, i + CHUNK_SIZE);
+        const result = await db.insert(users)
+            .values(chunk)
+            .returning({ user_id: users.user_id });
+        insertedUsers.push(...result);
+        i += CHUNK_SIZE;
+        simulatedTime += 60 * 1000;
+    }
 
     //comments
-    const topLevelComments = Array.from({ length: 20 }, () => ({
-        video_id: faker.helpers.arrayElement(videoIds),
-        user_id: faker.helpers.arrayElement(userIds),
-        level: 0,
-        comment: faker.word.words({ count: { min: 8, max: 15 } }),
-        create_time: faker.date.recent({ days: 30 }),
-    }));
+    const rawComments = fs.readFileSync(outputCommentsPath, 'utf-8');
+    const commentData = JSON.parse(rawComments);
+    const commentRows = commentData.map(comment => {
+        return {
+            video_id: comment.video_id,
+            comment_id: comment.comment_id,
+            user_id: comment.user_id,
+            level: Number(comment.level),
+            comment: comment.comment,
+            parent_comment_id: comment.parent_comment_id === "" || comment.parent_comment_id == null
+                ? null
+                : Number(comment.parent_comment_id),
+            create_time: comment.create_time,
+        }
+    });
 
-    const insertedComments = await db.insert(comments).values(topLevelComments).returning({ comment_id: comments.comment_id });
+    // Split into parents (level 0) and children (level > 0)
+    const parentRows = commentRows.filter(c => c.level === 0);
+    const childRows = commentRows.filter(c => c.level !== 0);
 
-    const replies = Array.from({ length: 20 }, () => ({
-        video_id: faker.helpers.arrayElement(videoIds),
-        user_id: faker.helpers.arrayElement(userIds),
-        parent_comment_id: faker.helpers.arrayElement(insertedComments).comment_id, // pick a real parent
-        level: 1,
-        comment: faker.word.words({ count: { min: 8, max: 15 } }),
-        create_time: faker.date.recent({ days: 30 }),
-    }));
-    await db.insert(comments).values(replies);
+    const insertedComments: { comment_id: number }[] = [];
+
+    async function insertInChunks(rows: typeof commentRows) {
+        for (let i = 0; i < rows.length; i += 1) {
+            const CHUNK_SIZE = faker.number.int({ min: 300, max: 800 });
+            const chunk = rows.slice(i, i + CHUNK_SIZE);
+            if (chunk.length === 0) continue;
+
+            const result = await db.insert(comments)
+                .values(chunk)
+                .returning({ comment_id: comments.comment_id });
+            insertedComments.push(...result);
+
+            i += CHUNK_SIZE - 1; // account for variable chunk size
+        }
+    }
+
+    // Insert parents first, then children
+    await insertInChunks(parentRows);
+    await insertInChunks(childRows);
+    console.log(`[Inserted video count : ]${insertedVideos.length}`);
+    console.log(`[Inserted user count : ]${insertedUsers.length}`);
+    console.log(`[Inserted comment count : ]${insertedComments.length}`);
     await pool.end();
     await app.close();
 }

@@ -1,4 +1,4 @@
-import { Controller,Get, Post, Put, Delete,Body,Param, ParseIntPipe } from '@nestjs/common';
+import { Controller,Get, Post, Put, Delete,Body,Param, ParseIntPipe, Query } from '@nestjs/common';
 import { VideoService } from './video.service';
 import type { createVideoDTO } from './video.dto';
 @Controller('video')
@@ -7,8 +7,8 @@ export class VideoController {
     
   }
   @Get()
-    async findAll(){
-      return this.videoService.findAll();
+    async findAll(@Query('offset') offset: number = 0){
+      return this.videoService.findAll(offset);
     }
   
     @Get(':id')

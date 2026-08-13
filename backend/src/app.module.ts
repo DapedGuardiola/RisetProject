@@ -7,9 +7,10 @@ import { UsersModule } from './users/users.module';
 import { DbModule } from './db/db.module';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerMiddleware } from './middleware/logger.middleware';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),VideoModule, CommentsModule, UsersModule, DbModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),VideoModule, CommentsModule, UsersModule, DbModule, AnalyticsModule],
   controllers: [AppController],
   providers: [AppService],
 })
