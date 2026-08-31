@@ -9,6 +9,10 @@ export interface Message<T> {
 @Controller()
 export class ClickhouseController {
     constructor(private chService: ClickhouseService) { }
+    @MessagePattern('queries.health')
+    async healthCheck() {
+        return await this.chService.healthCheck();
+    }
     @MessagePattern('userSignUp')
     async userSignUp(): Promise<Message<any>> {
         const { result, duration } = await this.chService.getSignUpAnalytics();

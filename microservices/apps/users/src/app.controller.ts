@@ -7,6 +7,11 @@ import type { createUserDTO } from './user.dto';
 export class AppController {
   constructor(private readonly appService: AppService) { }
 
+  @MessagePattern('users.health')
+  async healthCheck() {
+    return await this.appService.healthCheck();
+  }
+
   @MessagePattern('users.getAllUsers')
   async getAllUsers(
     @Payload() payload?: { limit?: number; offset?: number },

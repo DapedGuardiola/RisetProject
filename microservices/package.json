@@ -22,7 +22,7 @@
   "devEngines": {
     "packageManager": {
       "name": "npm",
-      "version": ">=11.0.0"
+      "version": "^11.0.0"
     }
   },
   "workspaces": [
@@ -35,6 +35,7 @@
     "@nestjs/config": "^4.0.4",
     "@nestjs/microservices": "^11.2.1",
     "drizzle-orm": "1.0.0-rc.3",
+    "lodash": "^4.18.1",
     "pg": "^8.23.0"
   }
 }

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Inject, Sse, MessageEvent, Query, Param, Body } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ClientProxy } from '@nestjs/microservices';
-import { interval, map, Observable, switchMap } from 'rxjs';
+import { interval, map, Observable, switchMap, firstValueFrom, timeout, catchError, of } from 'rxjs';
 import { CreateCommentDto } from './dto/createCommentDTO';
 
 export interface AnalyticsMessage<T> {
@@ -20,6 +20,19 @@ export class AppController {
     private readonly queriesService: ClientProxy,
     private readonly apiService: AppService,
   ) { }
+
+  @Get()
+  getRoot() {
+    return {
+      status: 'ok',
+      message: 'API Gateway is running',
+      endpoints: {
+        health: '/api/health',
+        users: '/api/users',
+        video: '/api/video',
+      },
+    };
+  }
 
   @Get('users')
   getAllUsers(
@@ -47,9 +60,46 @@ export class AppController {
     return this.apiService.stopGeneration();
   }
 
+  @Get('health')
+  async healthCheck() {
+    const [contents, users, queries] = await Promise.all([
+      firstValueFrom(
+        this.contentsService.send('contents.health', {}).pipe(
+          timeout(3000),
+          catchError((err) => of({ status: 'error', service: 'contents-service', error: err.message })),
+        ),
+      ),
+      firstValueFrom(
+        this.usersService.send('users.health', {}).pipe(
+          timeout(3000),
+          catchError((err) => of({ status: 'error', service: 'users-service', error: err.message })),
+        ),
+      ),
+      firstValueFrom(
+        this.queriesService.send('queries.health', {}).pipe(
+          timeout(3000),
+          catchError((err) => of({ status: 'error', service: 'queries-service', error: err.message })),
+        ),
+      ),
+    ]);
+
+    const isAllOk = contents.status === 'ok' && users.status === 'ok' && queries.status === 'ok';
+
+    return {
+      status: isAllOk ? 'ok' : 'degraded',
+      timestamp: new Date().toISOString(),
+      gateway: 'running',
+      services: {
+        contents,
+        users,
+        queries,
+      },
+    };
+  }
+
   @Get('checkContentsConnection')
   checkContent() {
-    return this.contentsService.send('contents.check', {})
+    return this.contentsService.send('contents.check', {});
   }
 
   @Sse('totalComments')

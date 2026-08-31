@@ -18,7 +18,6 @@ function getInitial(author: string) {
 export default function CommentSection({ userId }: paramType) {
   const { activeComment, isCommentLoading, comments, setComments, setIsCommentLoading, addComment, activeIndex, selectedParentId, setSelectedParentId, parentLimit, setParentLimit, childLimit, setChildLimit } = useContentContext();
 
-
   //initial state
   useEffect(() => {
     if (!activeIndex) return;

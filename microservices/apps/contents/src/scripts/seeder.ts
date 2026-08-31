@@ -7,6 +7,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { relations } from "../db/relations";
 import { faker } from '@faker-js/faker';
 import { videos, comments } from "../db/schema";
+import { sql } from 'drizzle-orm';
 import * as fs from 'fs';
 import * as path from 'path';
 async function bootstrap() {
@@ -40,9 +41,11 @@ async function bootstrap() {
     const outputVideoIdsPath = path.join(__dirname, './rawdata/newvideo_id.json');
     const outputCommentsPath = path.join(__dirname, './rawdata/newcomments.json');
 
+    ///////// CLEAN EXISTING DATA ////////
+    await db.execute(sql`TRUNCATE TABLE comments, videos RESTART IDENTITY CASCADE;`);
+
     ///////// VIDEO ////////
     const availableVideoId = fs.readFileSync(outputVideoIdsPath, 'utf-8');
-    const availableComments = fs.readFileSync(outputVideoIdsPath, 'utf-8');
     const videoIds = JSON.parse(availableVideoId);
 
     await db.insert(videos).values(
@@ -92,8 +95,23 @@ async function bootstrap() {
     // Insert parents first, then children
     await insertInChunks(parentRows);
     await insertInChunks(childRows);
+
+    // Synchronize identity sequences to current max IDs
+    await db.execute(sql`
+        SELECT setval(
+            pg_get_serial_sequence('videos', 'video_id'),
+            COALESCE((SELECT MAX(video_id) FROM videos), 1)
+        );
+    `);
+
+    await db.execute(sql`
+        SELECT setval(
+            pg_get_serial_sequence('comments', 'comment_id'),
+            COALESCE((SELECT MAX(comment_id) FROM comments), 1)
+        );
+    `);
     
-    console.log("Insertion Completed")
+    console.log("Insertion and sequence synchronization completed successfully.");
     await pool.end();
     await app.close();
 

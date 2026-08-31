@@ -4,9 +4,12 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: ["http://frontend:3001","http://localhost:3001"],
+    origin: ["http://frontend:3000","http://localhost:3000"],
     credentials: true,
   });
-  await app.listen(process.env.PORT ?? 3006);
+  const port = process.env.PORT ?? 3006;
+  await app.listen(port, '0.0.0.0');
+  console.log(`API Gateway is running on: http://localhost:${port}/api`);
+  console.log(`Health check available at: http://localhost:${port}/api/health`);
 }
 bootstrap();

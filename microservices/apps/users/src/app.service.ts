@@ -1,13 +1,31 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { DRIZZLE } from './db/db.module';
 import { users } from './db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 @Injectable()
 export class AppService {
   constructor(
     @Inject(DRIZZLE) private db: any
   ) { }
+
+  async healthCheck() {
+    try {
+      await this.db.execute(sql`SELECT 1`);
+      return {
+        status: 'ok',
+        service: 'users-service',
+        database: 'mysql:connected',
+      };
+    } catch (error: any) {
+      return {
+        status: 'error',
+        service: 'users-service',
+        database: 'mysql:disconnected',
+        error: error?.message || 'Database error',
+      };
+    }
+  }
 
   async getAllUsers(limit: number = 10, offset: number = 0) {
     const rows = await this.db

@@ -13,6 +13,24 @@ export class ClickhouseService {
     @Inject(CLICKHOUSE)
     private ch: ClickHouseClient) { }
 
+  async healthCheck() {
+    try {
+      const ping = await this.ch.ping();
+      return {
+        status: 'ok',
+        service: 'queries-service',
+        database: ping.success ? 'clickhouse:connected' : 'clickhouse:unreachable',
+      };
+    } catch (error: any) {
+      return {
+        status: 'error',
+        service: 'queries-service',
+        database: 'clickhouse:disconnected',
+        error: error?.message || 'Clickhouse error',
+      };
+    }
+  }
+
   private async run<T = any>(query: string, params?: Record<string, any>): Promise<QueryResult<T>> {
     const res = await this.ch.query({
       query,

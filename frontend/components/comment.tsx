@@ -1,4 +1,4 @@
-﻿import FormComment from "./formReply";
+import FormComment from "./formReply";
 import Replies from "./replies";
 import TrustScoreDonut from "./Cards/TrustScoreDonut";
 import { Timestamp } from "next/dist/server/lib/cache-handlers/types";
@@ -42,8 +42,8 @@ export default function Comment({
     >
       <div className="shrink-0">
         <img
-          src="https://picsum.photos/600/600"
-          alt={data.user.username}
+          src={`https://picsum.photos/seed/${data.user?.user_id ?? data.user_id ?? data.comment_id}/200/200`}
+          alt={data.user?.username ?? "User avatar"}
           className="h-16 w-16 rounded-full object-cover"
         />
       </div>

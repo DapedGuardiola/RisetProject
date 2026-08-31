@@ -72,7 +72,7 @@ export default function UserGrid({width, sessionUser, setSessionUser}:paramType)
               }`}
             >
               <img
-                src="https://picsum.photos/600/600"
+                src={`https://picsum.photos/seed/${user.user_id}/200/200`}
                 alt={user.username}
                 className="h-16 w-16 rounded-full object-cover"
               />
