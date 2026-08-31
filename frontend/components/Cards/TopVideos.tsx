@@ -23,7 +23,7 @@ export function TopVideosCard() {
             <XAxis type="number" allowDecimals={false} />
             <YAxis type="category" dataKey="video_id" width={120} />
             <Tooltip />
-            <Bar dataKey="comment_count" fill="#4f46e5" />
+            <Bar dataKey="comment_count" fill="#edf02a" />
           </BarChart>
         </ResponsiveContainer>
       )}

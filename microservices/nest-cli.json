@@ -1,0 +1,29 @@
+{
+  "monorepo": true,
+  "root": "apps/microservices",
+  "sourceRoot": "apps/microservices/src",
+  "compilerOptions": {
+    "webpack": true,
+    "tsConfigPath": "apps/microservices/tsconfig.app.json"
+  },
+  "projects": {
+    "microservices": {
+      "type": "application",
+      "root": "apps/microservices",
+      "entryFile": "main",
+      "sourceRoot": "apps/microservices/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/microservices/tsconfig.app.json"
+      }
+    },
+    "queries": {
+      "type": "application",
+      "root": "apps/queries",
+      "entryFile": "main",
+      "sourceRoot": "apps/queries/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/queries/tsconfig.app.json"
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { Controller, Query } from '@nestjs/common';
+import { Controller, Query, MessageEvent } from '@nestjs/common';
 import { Sse } from '@nestjs/common';
 import { Observable, interval } from 'rxjs';
 import { switchMap, map } from 'rxjs/operators';
@@ -19,7 +19,7 @@ export class AnalyticsController {
   streamTopVideos(
     @Query('limit') limit?: string,
     @Query('days') days?: string,
-  ): Observable<AnalyticsMessage<any>> {
+  ): Observable<MessageEvent> {
     return interval(1000).pipe(
       switchMap(() =>
         this.analyticsService.topVideosByComments(
@@ -27,19 +27,21 @@ export class AnalyticsController {
           days ? Number(days) : undefined,
         ),
       ),
-      map(({ result, duration }) => ({ data: result, duration }) as AnalyticsMessage<any>),
+      map(({ result, duration }) => ({ data: { data: result, duration } as AnalyticsMessage<any> })),
     );
   }
 
   @Sse('/comments/by-minute')
   streamCommentsByMinute(
-    @Query('limit') limit?: string,
-    @Query('days') days?: string,): Observable<AnalyticsMessage<any>> {
+    @Query('hours') hours?: string,): Observable<MessageEvent> {
     return interval(1000).pipe(
       switchMap(() =>
-        this.analyticsService.commentsByMinute(limit),
+        this.analyticsService.commentsByMinute(
+          hours ? Number(hours) : undefined),
       ),
-      map(({ result, duration }) => ({ data: result, duration }) as AnalyticsMessage<any>),
+      map(({ result, duration }) => ({
+        data: { data: result, duration } as AnalyticsMessage<any>,
+      })),
     );
   }
 
@@ -47,7 +49,7 @@ export class AnalyticsController {
   streamTopRepliers(
     @Query('limit') limit?: string,
     @Query('days') days?: string,
-  ): Observable<AnalyticsMessage<any>> {
+  ): Observable<MessageEvent> {
     return interval(1000).pipe(
       switchMap(() =>
         this.analyticsService.topUsersByReplies(
@@ -55,7 +57,23 @@ export class AnalyticsController {
           days ? Number(days) : undefined,
         ),
       ),
-      map(({ result, duration }) => ({ data: result, duration }) as AnalyticsMessage<any>),
+      map(({ result, duration }) => ({
+        data: { data: result, duration } as AnalyticsMessage<any>,
+      })),
     );
   }
+
+  @Sse('/users/user-signed-up')
+  StreamUserSignUp(): Observable<MessageEvent> {
+    return interval(1000).pipe(
+      switchMap(() =>
+        this.analyticsService.userSignedUp(
+        ),
+      ),
+      map(({ result, duration }) => ({
+        data: { data: result, duration } as AnalyticsMessage<any>,
+      })),
+    );
+  }
+
 }

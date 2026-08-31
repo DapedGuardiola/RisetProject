@@ -27,6 +27,7 @@ export class AnalyticsService {
     console.log(`Each Queries Separator  ::::: [Duration] ${duration} ms`);
     return { result: result as unknown as T[], duration };
   }
+
   async streamComments() {
     const res = await this.ch.query({
       query: 'SELECT * FROM comments_storage',
@@ -41,7 +42,7 @@ export class AnalyticsService {
   }
 
   /** Videos with the most comments */
-  async topVideosByComments(limit = 20, days = 30) {
+  async topVideosByComments(limit = 5, days = 1) {
     const query = `
       SELECT
         video_id,
@@ -55,32 +56,56 @@ export class AnalyticsService {
     return this.run<{ video_id: string; comment_count: number }>(query, { limit, days });
   }
 
+  // 
   /** Comment volume bucketed by minute */
-  async commentsByMinute(limit) {
+  async commentsByMinute(hours = 24) {
     const query = `
       SELECT
         toStartOfMinute(create_time) AS minute,
         count() AS comment_count
       FROM comments_storage
+      WHERE create_time >= now() - INTERVAL {hours:UInt32} HOUR
       GROUP BY minute
       ORDER BY minute ASC
     `;
-    return this.run<{ minute: string; comment_count: number }>(query,{limit});
+    return this.run<{ minute: string; comment_count: number }>(query, { hours });
   }
 
-  /** Users with the most replies (comments where parent_comment_id is not null) */
-  async topUsersByReplies(limit = 20, days = 30) {
+  /** Comment & Topics with the most replies (comments where parent_comment_id is not null) */
+  async topUsersByReplies(limit = 5, days = 1) {
     const query = `
       SELECT
-        user_id,
-        count() AS reply_count
-      FROM comments_storage
-      WHERE parent_comment_id != ''
-        AND create_time >= now() - INTERVAL {days:UInt32} DAY
-      GROUP BY user_id
+          parent_comment_id AS top_comment_id,
+          any(p.comment) AS topic,
+          count() AS reply_count
+      FROM comments_storage AS c
+      INNER JOIN comments_storage AS p
+        ON c.parent_comment_id = p.comment_id
+      WHERE p.level = 0 and  create_time >= now() - INTERVAL {days:UInt32} DAY
+      GROUP BY parent_comment_id
       ORDER BY reply_count DESC
       LIMIT {limit:UInt32}
-    `;
-    return this.run<{ user_id: string; reply_count: number }>(query, { limit, days });
+      `;
+    return this.run<{ top_comment_id: number; topic: Text, reply_count: number }>(query, { limit, days });
+  }
+
+  async userSignedUp() {
+    const query = `
+      SELECT
+        count() AS user_count
+      FROM users_storage
+      WHERE create_time >= toStartOfHour(now())
+      `;
+    return this.run<{ user_count: number }>(query);
+  }
+
+  async botComments() {
+    const query = `
+      SELECT
+        count() AS user_count
+      FROM users_storage
+      WHERE create_time >= toStartOfHour(now())
+      `;
+    return this.run<{ user_count: number }>(query);
   }
 }

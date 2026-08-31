@@ -1,5 +1,5 @@
 {
-  "name": "analytics-connector",  
+  "name": "contents-connector",  
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector", 
     "database.hostname": "postgre", 
@@ -10,8 +10,8 @@
     "plugin.name": "pgoutput",
     "publication.name": "dbz_publication",
     "database.dbname" : "risetproject",   
-    "topic.prefix": "analytics", 
-    "table.include.list": "public.comments,public.users,public.videos" ,
+    "topic.prefix": "contents", 
+    "table.include.list": "public.comments,public.videos" ,
     "transforms":"unwrap",
     "transforms.unwrap.type":"io.debezium.transforms.ExtractNewRecordState",
     "transforms.unwrap.delete.tombstone.handling.mode":"rewrite",

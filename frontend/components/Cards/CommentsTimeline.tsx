@@ -1,11 +1,26 @@
 "use client";
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { useAnalytics } from '../Clients/AnalyticClient';
+import { useMemo } from 'react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,Legend } from 'recharts';
+import { useAnalytics, } from '../Clients/AnalyticClient';
 
 export function CommentsTimelineCard() {
-  const { commentsByMinute, loading, error, durations } = useAnalytics();
+  const { commentsByMinute, filteredCommentsByMinute, loading, error, durations } = useAnalytics();
+  const mergedCommentsByMinute = useMemo(() => {
+    const map = new Map();
 
+    commentsByMinute.forEach((d) => {
+      map.set(d.minute, { minute: d.minute, comment_count: d.comment_count });
+    });
+
+    filteredCommentsByMinute.forEach((d) => {
+      const existing = map.get(d.minute) || { minute: d.minute };
+      existing.filtered_comment_count = d.comment_count;
+      map.set(d.minute, existing);
+    });
+
+    return Array.from(map.values()).sort((a, b) => a.minute.localeCompare(b.minute));
+  }, [commentsByMinute, filteredCommentsByMinute]);
   return (
     <div className="card">
       <div className="card-header">
@@ -20,15 +35,31 @@ export function CommentsTimelineCard() {
 
       {!loading.commentsByMinute && !error.commentsByMinute && (
         <ResponsiveContainer width="100%" height={320}>
-          <LineChart data={commentsByMinute}>
+          <LineChart data={mergedCommentsByMinute}>
             <XAxis
               dataKey="minute"
               tickFormatter={(v) => new Date(v.replace(' ', 'T')).toLocaleTimeString()}
               minTickGap={40}
             />
             <YAxis allowDecimals={false} />
-            <Tooltip labelFormatter={(v) => new Date((v as string).replace(' ', 'T')).toLocaleTimeString()} />
-            <Line type="monotone" dataKey="comment_count" stroke="#16a34a" dot={false} />
+            <Tooltip
+              labelFormatter={(v) => new Date((v as string).replace(' ', 'T')).toLocaleTimeString()}
+            />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="comment_count"
+              name="All comments"
+              stroke="#1ff8ff"
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="filtered_comment_count"
+              name="Filtered comments"
+              stroke="#ff6b6b"
+              dot={false}
+            />
           </LineChart>
         </ResponsiveContainer>
       )}

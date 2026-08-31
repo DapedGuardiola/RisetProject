@@ -1,6 +1,8 @@
 "use client";
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useContentContext } from "./Clients/ContentClients";
+import { CommentItem, ParentComment } from "./Clients/ContentClients";
+import { convertServerPatchToFullTree } from "next/dist/client/components/segment-cache/navigation";
 export default function FormComment({
   isRoot = false,
   parent,
@@ -15,24 +17,58 @@ export default function FormComment({
   replyVideoId: number | undefined;
 }) {
   const [reply, setReply] = useState(false);
-  const {addComment,setAddComment} = useContentContext();
+  const { addComment, comments, setAddComment, setComments } = useContentContext();
+
+  function insertReply(
+    comments: ParentComment[],
+    newComment: CommentItem
+  ): ParentComment[] {
+    return comments.map(comment => {
+      if (comment.comment_id === newComment.parent_comment_id) {
+        console.log("insert into comment : ", comment.comment);
+        console.log("with new children : ", newComment);
+        return {
+          ...comment,
+          children: [...comment.children, newComment],
+        };
+      }
+      return comment;
+    });
+  }
+
   let handleReply = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comments`, {
+    const newComment = {
+      video_id: replyVideoId,
+      parent_comment_id: parent,
+      level: (isRoot ? 0 : parentLevel! + 1),
+      comment: addComment,
+      user_id: replyUserId,
+      create_time : new Date(),
+    }
+    const res = await fetch(`http://localhost:3006/api/comments`, {
       method: "POST",
       headers: { "Content-Type": "Application/json" },
-      body: JSON.stringify({
-        video_id: replyVideoId,
-        parent_comment_id: parent,
-        level: (isRoot? 0 : parentLevel! + 1),
-        comment: addComment,
-        user_id: replyUserId,
-      }),
+      body: JSON.stringify(newComment),
     });
     if (res.ok) {
+      const returnedComment = await res.json();
+      console.log("comment", returnedComment);
+      if (isRoot) {
+        setComments([...comments, { ...returnedComment, children: [] }]);
+        console.log("root inserted reply ");
+      } else {
+        console.log("Before insertion: ", comments);
+        setComments(insertReply(comments, returnedComment));
+      }
       setAddComment("");
     }
   };
+
+  useEffect(() => {
+    console.log("[[[[After Insertion ]]]]", comments);
+  }, [comments]);
+
   let handleButtonReply = () => {
     setReply(!reply);
   };
@@ -48,7 +84,7 @@ export default function FormComment({
       <form
         onSubmit={(e) => handleReply(e)}
         className="w-full flex"
-        hidden={(!reply&&!isRoot)}
+        hidden={(!reply && !isRoot)}
       >
         <input
           name="comment"

@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed": "ts-node -r tsconfig-paths/register src/scripts/seeder.ts",
     "extract-data": "ts-node -r tsconfig-paths/register src/scripts/extractData.ts",
+    "generate-data": "ts-node -r tsconfig-paths/register src/scripts/generateData.ts",
     "migrate": "npx drizzle-kit migrate"
   },
   "dependencies": {

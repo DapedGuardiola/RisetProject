@@ -54,6 +54,140 @@ services:
         - action: rebuild
           path: ./backend/package.json
 
+  users-service:
+    build:
+      context: ./microservices
+      dockerfile: apps/users/Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      DATABASE_HOST: mysql
+      DATABASE_PORT: 3306
+      DATABASE_USER: root
+      DATABASE_PASSWORD: Akudavid123
+      DATABASE_NAME: usersDatabase
+      DATABASE_URL: mysql://root:Akudavid123@mysql:3306/usersDatabase
+      PORT: 3004
+      DEBUG: "true"
+    depends_on: 
+      mysql : 
+        condition: service_healthy
+    volumes:
+    - ./microservices/apps/users:/usr/src/app/apps/users
+    - /usr/src/app/apps/users/node_modules
+    develop:
+      watch:  
+        - action: sync
+          path: ./microservices/apps/users/src
+          target: /usr/src/app/apps/users/src
+          ignore:
+            - node_modules/
+            - dist/
+        - action: rebuild
+          path: ./microservices/apps/users/package.json
+
+  api-gateway:
+    build:
+      context: ./microservices
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "3006:3006"
+    environment:
+      TCP_USERSSERVICE_HOST: users-service
+      TCP_USERSSERVICE_PORT: 3004
+      TCP_CONTENTSSERVICE_HOST: contents-service
+      TCP_CONTENTSSERVICE_PORT: 3005
+      TCP_QUERIESSERVICE_HOST: queries-service
+      TCP_QUERIESSERVICE_PORT: 3007
+      PORT: 3006
+      DEBUG: "true"
+    depends_on: 
+      mysql : 
+        condition: service_healthy
+    volumes:
+    - ./microservices/apps/api:/usr/src/app/apps/api
+    - /usr/src/app/apps/api/node_modules
+    develop:
+      watch:  
+        - action: sync
+          path: ./microservices/apps/api/src
+          target: /usr/src/app/apps/api/src
+          ignore:
+            - node_modules/
+            - dist/
+        - action: rebuild
+          path: ./microservices/apps/api/package.json
+
+  queries-service:
+    build:
+      context: ./microservices
+      dockerfile: apps/queries/Dockerfile
+    ports:
+      - "3007:3007"
+    environment:
+      CLICKHOUSE_URL: http://default:root@clickhouse:8123/analytics
+      PORT: 3007
+      DEBUG: "true"
+    depends_on: 
+      postgre : 
+        condition: service_healthy
+    volumes:
+    - ./microservices/apps/queries:/usr/src/app/apps/queries
+    - /usr/src/app/apps/queries/node_modules
+    develop:
+      watch:
+        - action: sync
+          path: ./microservices/apps/queries/src
+          target: /usr/src/app/apps/queries/src
+          ignore:
+            - node_modules/
+            - dist/
+        - action: rebuild
+          path: ./microservices/apps/queries/package.json
+
+  contents-service:
+    build:
+      context: ./microservices
+      dockerfile: apps/contents/Dockerfile
+    ports:
+      - "3005:3005"
+    environment:
+      DATABASE_URL: postgresql://postgres:Akudavid123@postgre:5432/risetproject
+      PORT: 3005
+      DEBUG: "true"
+    depends_on: 
+      postgre : 
+        condition: service_healthy
+    volumes:
+    - ./microservices/apps/contents:/usr/src/app/apps/contents
+    - /usr/src/app/apps/contents/node_modules
+    develop:
+      watch:
+        - action: sync
+          path: ./microservices/apps/contents/src
+          target: /usr/src/app/apps/contents/src
+          ignore:
+            - node_modules/
+            - dist/
+        - action: rebuild
+          path: ./microservices/apps/contents/package.json
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: Akudavid123
+      MYSQL_DATABASE: usersDatabase
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pAkudavid123"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-conf/gtid.cnf:/etc/mysql/conf.d/gtid.cnf
+
   postgre:
     image: postgres
     command: ["postgres", "-c", "wal_level=logical"]
@@ -138,3 +272,4 @@ services:
 volumes:
   postgres_data:
   clickhouse_data:
+  mysql_data:

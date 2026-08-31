@@ -1,7 +1,7 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { subscribeToStream } from '@/components/api/analyticsApi';
-import type { AnalyticsState } from '../Types/Analytics';
+import type { AnalyticsState, BotComment, FilteredCommentsByMinute, UserSignUp } from '../Types/Analytics';
 import { TopReplier, TopVideo, CommentsByMinute } from '../Types/Analytics';
 interface AnalyticsContextValue extends AnalyticsState {
     setFilters: (filters: Partial<AnalyticsState['filters']>) => void;
@@ -13,10 +13,13 @@ const initialState: AnalyticsState = {
     topVideos: [],
     commentsByMinute: [],
     topRepliers: [],
-    loading: { topVideos: true, commentsByMinute: true, topRepliers: true },
-    error: { topVideos: null, commentsByMinute: null, topRepliers: null },
-    durations: { topVideos: null, commentsByMinute: null, topRepliers: null },
-    filters: { days: 30, hours: 24, limit: 20 },
+    userSignUp: [],
+    botComment: [],
+    filteredCommentsByMinute: [],
+    loading: { topVideos: true, commentsByMinute: true, filteredCommentsByMinute: true, topRepliers: true, userSignUp: true, botComment: true },
+    error: { topVideos: null, commentsByMinute: null, filteredCommentsByMinute: null, topRepliers: null, userSignUp: null, botComment: null },
+    durations: { topVideos: null, commentsByMinute: null, filteredCommentsByMinute: null, topRepliers: null, userSignUp: null, botComment: null },
+    filters: { days: 1, hours: 1, limit: 5 },
 };
 
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
@@ -35,7 +38,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
         }));
 
         const cleanup = subscribeToStream<TopVideo>(
-            '/top-videos',
+            'api/top-videos',
             { limit: state.filters.limit, days: state.filters.days },
             (msg) => {
                 setState((prev) => ({
@@ -66,8 +69,8 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
         }));
 
         const cleanup = subscribeToStream<CommentsByMinute>(
-            '/by-minute',
-            { limit: state.filters.limit, days: state.filters.days },
+            'api/commentsPerMinute',
+            { hours: state.filters.hours },
             (msg) => {
                 setState((prev) => ({
                     ...prev,
@@ -88,6 +91,36 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
         return cleanup;
     }, [state.filters.hours]);
 
+    // Comments by minute stream
+    useEffect(() => {
+        setState((prev) => ({
+            ...prev,
+            loading: { ...prev.loading, filteredCommentsByMinute: true },
+            error: { ...prev.error, filteredCommentsByMinute: null },
+        }));
+
+        const cleanup = subscribeToStream<FilteredCommentsByMinute>(
+            'api/filteredCommentsPerMinute',
+            { hours: state.filters.hours },
+            (msg) => {
+                setState((prev) => ({
+                    ...prev,
+                    filteredCommentsByMinute: msg.data,
+                    durations: { ...prev.durations, filteredCommentsByMinute: msg.duration },
+                    loading: { ...prev.loading, filteredCommentsByMinute: false },
+                }));
+            },
+            () => {
+                setState((prev) => ({
+                    ...prev,
+                    loading: { ...prev.loading, filteredCommentsByMinute: false },
+                    error: { ...prev.error, filteredCommentsByMinute: 'Connection lost' },
+                }));
+            },
+        );
+        return cleanup;
+    }, [state.filters.hours]);
+
     // Top repliers stream
     useEffect(() => {
         setState((prev) => ({
@@ -97,7 +130,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
         }));
 
         const cleanup = subscribeToStream<TopReplier>(
-            '/top-repliers',
+            'api/top-repliers',
             { limit: state.filters.limit, days: state.filters.days },
             (msg) => {
                 setState((prev) => ({
@@ -118,6 +151,66 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
 
         return cleanup;
     }, [state.filters.limit, state.filters.days]);
+
+    //Inserted User Count by minute
+    useEffect(() => {
+        setState((prev) => ({
+            ...prev,
+            loading: { ...prev.loading, userSignUp: true },
+            error: { ...prev.error, userSignUp: null },
+        }));
+
+        const cleanup = subscribeToStream<UserSignUp>(
+            'api/user-signed-up',
+            { hours: state.filters.hours },
+            (msg) => {
+                setState((prev) => ({
+                    ...prev,
+                    userSignUp: msg.data,
+                    durations: { ...prev.durations, userSignup: msg.duration },
+                    loading: { ...prev.loading, userSignup: false },
+                }));
+            },
+            () => {
+                setState((prev) => ({
+                    ...prev,
+                    loading: { ...prev.loading, userSignup: false },
+                    error: { ...prev.error, userSignup: 'Connection lost' },
+                }));
+            },
+        );
+        return cleanup;
+    }, []);
+
+    useEffect(() => {
+        setState((prev) => ({
+            ...prev,
+            loading: { ...prev.loading, botComment: true },
+            error: { ...prev.error, botComment: null },
+        }));
+
+        const cleanup = subscribeToStream<BotComment>(
+            'api/bot-comments',
+            { hours: state.filters.hours },
+            (msg) => {
+                setState((prev) => ({
+                    ...prev,
+                    botComment: msg.data,
+                    durations: { ...prev.durations, botComment: msg.duration },
+                    loading: { ...prev.loading, botComment: false },
+                }));
+            },
+            () => {
+                setState((prev) => ({
+                    ...prev,
+                    loading: { ...prev.loading, botComment: false },
+                    error: { ...prev.error, botComment: 'Connection lost' },
+                }));
+            },
+        );
+        return cleanup;
+    }, []);
+
 
     return (
         <AnalyticsContext.Provider value={{ ...state, setFilters }}>
