@@ -72,7 +72,7 @@ export default function UserGrid({width, sessionUser, setSessionUser}:paramType)
               }`}
             >
               <img
-                src={`https://picsum.photos/seed/${user.user_id}/200/200`}
+                src={`https://i.pravatar.cc/300?u=user-${user.user_id}`}
                 alt={user.username}
                 className="h-16 w-16 rounded-full object-cover"
               />

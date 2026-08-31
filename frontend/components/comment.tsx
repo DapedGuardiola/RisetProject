@@ -42,7 +42,7 @@ export default function Comment({
     >
       <div className="shrink-0">
         <img
-          src={`https://picsum.photos/seed/${data.user?.user_id ?? data.user_id ?? data.comment_id}/200/200`}
+          src={`https://i.pravatar.cc/300?u=user-${data.user?.user_id ?? data.user_id ?? data.comment_id}`}
           alt={data.user?.username ?? "User avatar"}
           className="h-16 w-16 rounded-full object-cover"
         />

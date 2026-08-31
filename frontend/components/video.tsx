@@ -4,6 +4,23 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { videoType } from "./Types/VideoType";
 import { useContentContext } from "./Clients/ContentClients";
 
+const VIDEO_THUMBNAILS = [
+  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80",
+];
+
+const getVideoThumbnail = (id: number) => {
+  return VIDEO_THUMBNAILS[Math.abs(id) % VIDEO_THUMBNAILS.length];
+};
+
 const PAGE_SIZE = 2;
 
 export default function VideoGrid() {
@@ -249,10 +266,10 @@ export default function VideoGrid() {
             className="relative mx-auto h-125 min-w-full w-full overflow-hidden rounded-3xl"
           >
             <img
-              src={`https://picsum.photos/seed/${video.video_id}/800/600`}
+              src={getVideoThumbnail(video.video_id)}
               alt={video.title}
               loading="lazy"
-              className="mx-auto my-auto aspect-[19/16] h-full"
+              className="mx-auto my-auto aspect-[19/16] h-full object-cover"
             />
 
             <div className="absolute bottom-0 left-0">
