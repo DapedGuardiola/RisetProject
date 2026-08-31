@@ -5,16 +5,16 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport, } from '@nestjs/microservices';
 @Module({
   imports: [
-    ConfigModule,
-      ClientsModule.registerAsync([
+    ConfigModule.forRoot({ isGlobal: true }),
+    ClientsModule.registerAsync([
         {
           imports: [ConfigModule],
           name: 'USERS_SERVICE',
           useFactory: async (configService: ConfigService) => ({
             transport: Transport.TCP,
             options: {
-              host: configService.get<string>('TCP_USERSSERVICE_HOST'),
-              port: Number(configService.get('TCP_USERSSERVICE_PORT')),
+              host: configService.get<string>('TCP_HOST') || 'localhost',
+              port: Number(configService.get('TCP_USERSSERVICE_PORT') || 3004),
             },
           }),
           inject: [ConfigService],
@@ -25,8 +25,8 @@ import { ClientsModule, Transport, } from '@nestjs/microservices';
         useFactory: async (configService: ConfigService) => ({
           transport: Transport.TCP,
           options: {
-            host: configService.get<string>('TCP_CONTENTSSERVICE_HOST'),
-            port: Number(configService.get('TCP_CONTENTSSERVICE_PORT')),
+            host: configService.get<string>('TCP_HOST') || 'localhost',
+            port: Number(configService.get('TCP_CONTENTSSERVICE_PORT') || 3005),
           },
         }),
         inject: [ConfigService],
@@ -37,8 +37,8 @@ import { ClientsModule, Transport, } from '@nestjs/microservices';
         useFactory: async (configService: ConfigService) => ({
           transport: Transport.TCP,
           options: {
-            host: configService.get<string>('TCP_QUERIESSERVICE_HOST'),
-            port: Number(configService.get('TCP_QUERIESSERVICE_PORT')),
+            host: configService.get<string>('TCP_HOST') || 'localhost',
+            port: Number(configService.get('TCP_QUERIESSERVICE_PORT') || 3007),
           },
         }),
         inject: [ConfigService],

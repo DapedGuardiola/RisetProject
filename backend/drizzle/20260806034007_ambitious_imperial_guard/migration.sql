@@ -1,3 +1,0 @@
-ALTER TABLE "comments" ADD CONSTRAINT "comments_video_id_videos_video_id_fkey" FOREIGN KEY ("video_id") REFERENCES "videos"("video_id");--> statement-breakpoint
-ALTER TABLE "comments" ADD CONSTRAINT "comments_user_id_users_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("user_id");--> statement-breakpoint
-ALTER TABLE "comments" ADD CONSTRAINT "comments_parent_comment_id_comments_comment_id_fkey" FOREIGN KEY ("parent_comment_id") REFERENCES "comments"("comment_id");

@@ -1,1 +1,0 @@
-ALTER TABLE "videos" RENAME COLUMN "username" TO "title";

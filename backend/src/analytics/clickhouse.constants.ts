@@ -1,1 +1,0 @@
-export const CLICKHOUSE = Symbol('CLICKHOUSE_CONNECTION');
